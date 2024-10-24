@@ -1,9 +1,9 @@
 import signchart
 
-g = "x**2 - x - 6"
+f = "x**2 - x - 6"
 
 signchart.make_sign_chart(
-    f=g,
+    f=f,
     include_factors=True,
     color=True,  # Includes colored lines.
     fn_name="g(x)",  # Names the function g(x)
