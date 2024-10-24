@@ -5,7 +5,7 @@ make_sign_chart(f=f, include_factors=True)
 
 savefig(
     dirname="figures",
-    fname="example_1.svg",
+    fname="example_1.png",
 )
 
 show()
