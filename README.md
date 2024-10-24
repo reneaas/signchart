@@ -1,5 +1,5 @@
 # `signchart`
-`signchart` is a Python package for plotting sign charts for polynomial functions. It is designed to be simple to use to generate beatiful sign charts for polynomial functions.
+`signchart` is a Python package for plotting sign charts for polynomial functions. It is designed to be simple to use to generate beautiful sign charts for polynomial functions.
 
 ## Basic examples
 
