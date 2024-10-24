@@ -10,3 +10,7 @@ f = "(x**2 + 1)**2 * (x - 1)**2 * (x + 1)"
 make_sign_chart(f=f, include_factors=True)
 show()
 ```
+
+This will generate the following sign chart:
+
+![sign chart](./figures/example_1.svg)
