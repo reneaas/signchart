@@ -13,4 +13,4 @@ show()
 
 This will generate the following sign chart:
 
-![sign chart](./figures/example_1.svg)
+![sign chart](./figures/example_1.png)
