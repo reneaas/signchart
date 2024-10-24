@@ -19,7 +19,7 @@ signchart.show()
 
 This will generate the following sign chart:
 
-![sign chart](./examples/figures/example_1.svg)
+![sign chart](https://raw.githubusercontent.com/reneaas/signchart/refs/heads/main/examples/figures/example_1.svg)
 
 ---
 
@@ -49,7 +49,7 @@ signchart.show()
 
 This will generate the following sign chart:
 
-![sign chart](./examples/figures/example_2.svg)
+![sign chart](https://raw.githubusercontent.com/reneaas/signchart/refs/heads/main/examples/figures/example_2.svg)
 
 ### Example 2
 
@@ -75,7 +75,7 @@ signchart.show()
 
 This will generate the following sign chart:
 
-![sign chart](./examples/figures/example_3.svg)
+![sign chart](https://raw.githubusercontent.com/reneaas/signchart/refs/heads/main/examples/figures/example_3.svg)
 
 
 
