@@ -29,10 +29,10 @@ This will generate the following sign chart:
 ```python
 import signchart
 
-g = "x**2 - x - 6"
+f = "x**2 - x - 6"
 
 signchart.make_sign_chart(
-    f=g,
+    f=f,
     include_factors=True,
     color=True,  # Includes colored lines.
     fn_name="g(x)",  # Names the function g(x)
@@ -55,13 +55,13 @@ This will generate the following sign chart:
 ```python
 import signchart
 
-g = "-2 * x**2 + 2 * x + 12"
+f = "-2 * x**2 + 2 * x + 12"
 
 signchart.make_sign_chart(
-    f=g,
+    f=f,
     include_factors=True,
     color=True,  # Includes colored lines.
-    fn_name="g(x)",  # Names the function g(x)
+    fn_name="h(x)",  # Names the function h(x)
 )
 
 signchart.savefig(
