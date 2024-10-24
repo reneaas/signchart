@@ -417,7 +417,6 @@ def make_sign_chart(
             for i, root in enumerate(roots)
         ],
         fontsize=16,
-        length=1,
     )
 
     # Draw factors
