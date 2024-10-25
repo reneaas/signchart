@@ -3,15 +3,20 @@ import matplotlib.pyplot as plt
 import sympy as sp
 import pathlib
 
-import shutil
+import warnings
 
-latex_installed = shutil.which("latex") is not None
-if latex_installed:
+# Attempt to enable LaTeX rendering
+try:
     plt.rc("text", usetex=True)
-else:
+    # Test rendering a simple LaTeX expression
+    fig, ax = plt.subplots()
+    ax.text(0.5, 0.5, r"$E=mc^2$", fontsize=12)
+    plt.close(fig)  # Close the figure as it's only for testing
+except Exception:
     plt.rc("text", usetex=False)
-    print(
-        "Warning: LaTeX installation not found. Falling back to Matplotlib's default text rendering."
+    warnings.warn(
+        "LaTeX is not available. Falling back to Matplotlib's default text rendering.",
+        UserWarning,
     )
 
 
