@@ -32,7 +32,7 @@ def show():
     plt.show()
 
 
-def get_factors(polynomial: sp.Expr, x: sp.Symbol) -> list[dict]:
+def get_factors(polynomial, x):
     polynomial = sp.expand(polynomial)
     factor_list = sp.factor_list(polynomial)
     leading_coeff = factor_list[0]
@@ -58,14 +58,22 @@ def get_factors(polynomial: sp.Expr, x: sp.Symbol) -> list[dict]:
     return linear_factors
 
 
-def sort_factors(factors: list[dict]) -> list[dict]:
+def sort_factors(factors):
     factors = sorted(factors, key=lambda x: x.get("root"))
     return factors
 
 
 def draw_factors(
-    factors, roots, root_positions, ax, color_pos, color_neg, x, dy=-1, dx=0.02
-) -> None:
+    factors,
+    roots,
+    root_positions,
+    ax,
+    color_pos,
+    color_neg,
+    x,
+    dy=-1,
+    dx=0.02,
+):
     x_min = -0.05
     x_max = 1.05
     # Draw horizontal sign lines for each factor
@@ -351,14 +359,14 @@ def make_axis(x):
 
 
 def make_sign_chart(
-    f: sp.Expr,
-    x: sp.symbols = None,
-    fn_name: str = None,
-    color: bool = True,
-    include_factors: bool = True,
-    generic_labels: bool = False,
-    small_figsize: bool = False,
-) -> None:
+    f,
+    x=None,
+    fn_name=None,
+    color=True,
+    include_factors=True,
+    generic_labels=False,
+    small_figsize=False,
+):
     """Draws a sign chart for a polynomial f.
 
     Args:
@@ -460,21 +468,3 @@ def make_sign_chart(
     plt.tight_layout()
 
     return fig, ax
-
-
-if __name__ == "__main__":
-    f = "(x**2 - 4)**3 * (x - 1)**2 * (x + 4)"
-    make_sign_chart(f=f, include_factors=True)
-    show()
-
-    f = "x + 4"
-    make_sign_chart(f=f, include_factors=True)
-    show()
-
-    f = "(x - 1) * (x + 2)"
-    make_sign_chart(f=f, include_factors=False)
-    show()
-
-    f = "-3 * (r + 2) * (r + 3)"
-    make_sign_chart(f=f, include_factors=True, fn_name="g(r)")
-    show()
