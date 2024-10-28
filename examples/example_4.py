@@ -2,7 +2,7 @@ import signchart
 
 f = "-3 * (t - 1) * (t + 3)"  # Uses 't' as variable in place of 'x'
 
-signchart.make_sign_chart(
+signchart.plot(
     f=f,
     include_factors=False,  # excludes linear factors in the polynomial
     color=False,  # sign lines are black (uncolored)

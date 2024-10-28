@@ -2,7 +2,7 @@ import signchart
 
 f = "x**2 - x - 6"
 
-signchart.make_sign_chart(
+signchart.plot(
     f=f,
     include_factors=True,
     color=True,  # Includes colored lines.

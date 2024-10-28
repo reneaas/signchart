@@ -1,3 +1,3 @@
-from .make_sign_chart import make_sign_chart, show, savefig
+from .signchart import plot, show, savefig
 
-__all__ = ["make_sign_chart", "savefig", "show"]
+__all__ = ["plot", "savefig", "show"]

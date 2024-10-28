@@ -358,7 +358,7 @@ def make_axis(x):
     return fig, ax
 
 
-def make_sign_chart(
+def plot(
     f,
     x=None,
     fn_name=None,

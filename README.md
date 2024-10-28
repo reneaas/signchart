@@ -10,7 +10,7 @@ import signchart
 
 f = "(x**2 + 1)**2 * (x - 1)**2 * (x + 1)"
 
-signchart.make_sign_chart(f=f, include_factors=True)
+signchart.plot(f=f, include_factors=True)
 signchart.savefig(
     dirname="dirname",
     fname="fname",
@@ -31,7 +31,7 @@ import signchart
 
 f = "x**2 - x - 6"
 
-signchart.make_sign_chart(
+signchart.plot(
     f=f,
     include_factors=True,
     color=True,  # Includes colored lines.
@@ -57,7 +57,7 @@ import signchart
 
 f = "-2 * x**2 + 2 * x + 12"
 
-signchart.make_sign_chart(
+signchart.plot(
     f=f,
     include_factors=True,
     color=True,  # Includes colored lines.
@@ -84,7 +84,7 @@ import signchart
 
 f = "-3 * (t - 1) * (t + 3)"  # Uses 't' as variable in place of 'x'
 
-signchart.make_sign_chart(
+signchart.plot(
     f=f,
     include_factors=False,  # excludes linear factors in the polynomial
     color=False,  # sign lines are black (uncolored)
