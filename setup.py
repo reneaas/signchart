@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="signchart",  # Replace with your desired package name
-    version="0.1.13",
+    version="0.1.14",
     author="René Alexander Ask",
     author_email="rene.ask@icloud.com",
     description="Automatically generates sign charts for polynomial functions.",

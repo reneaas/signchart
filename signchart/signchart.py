@@ -206,6 +206,30 @@ def draw_function(
         va="center",
     )
 
+    # Case 1: the polynomial has no roots.
+    if len(roots) == 0:
+        x0 = 0
+        y0 = sp.sympify(f).evalf(subs={x: x0})
+
+        if y0 > 0:
+            ax.plot(
+                [x_min, x_max],
+                [y, y],
+                color=color_pos,
+                linestyle="-",
+                lw=2,
+            )
+        else:
+            ax.plot(
+                [x_min, x_max],
+                [y, y],
+                color=color_neg,
+                linestyle="--",
+                lw=2,
+            )
+
+        return None
+
     intervals = []
     interval_positions = []
 
