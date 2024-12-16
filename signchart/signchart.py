@@ -64,6 +64,7 @@ def sort_factors(factors):
 
 
 def draw_factors(
+    f,
     factors,
     roots,
     root_positions,
@@ -104,6 +105,7 @@ def draw_factors(
         )
         if factor.get("root") == -np.inf:
             y_value = sp.sympify(factor.get("expression")).evalf(subs={x: 0})
+            print(y_value)
             if y_value > 0:
                 ax.plot(
                     [x_min, x_max],
@@ -139,14 +141,24 @@ def draw_factors(
                 lw=2,
             )
 
-            plt.text(
-                x=root_pos,
-                y=(i + 1) * dy,
-                s=f"$0$",
-                fontsize=20,
-                ha="center",
-                va="center",
-            )
+            if str(f.subs(x, root)) != "zoo":
+                plt.text(
+                    x=root_pos,
+                    y=(i + 1) * dy,
+                    s=f"$0$",
+                    fontsize=20,
+                    ha="center",
+                    va="center",
+                )
+            else:
+                plt.text(
+                    x=root_pos + 0.005,
+                    y=(i + 1) * dy,
+                    s=f"$\\times$",
+                    fontsize=24,
+                    ha="center",
+                    va="center",
+                )
         else:
             root = factor.get("root")
             root_pos = root_positions[root]
@@ -166,14 +178,24 @@ def draw_factors(
                 lw=2,
             )
 
-            plt.text(
-                x=root_pos,
-                y=(i + 1) * dy,
-                s=f"$0$",
-                fontsize=20,
-                ha="center",
-                va="center",
-            )
+            if str(f.subs(x, root)) != "zoo":
+                plt.text(
+                    x=root_pos,
+                    y=(i + 1) * dy,
+                    s=f"$0$",
+                    fontsize=20,
+                    ha="center",
+                    va="center",
+                )
+            else:
+                plt.text(
+                    x=root_pos + 0.005,
+                    y=(i + 1) * dy,
+                    s=f"$\\times$",
+                    fontsize=24,
+                    ha="center",
+                    va="center",
+                )
 
 
 def draw_function(
@@ -190,6 +212,10 @@ def draw_function(
     dy=-1,
     dx=0.02,
 ):
+
+    # roots = [factor.get("root") for factor in factors]
+    # roots.remove(-np.inf)
+    # print(roots)
     x_min = -0.05
     x_max = 1.05
 
@@ -272,14 +298,24 @@ def draw_function(
     # Plot zeros at root positions
     for root in roots:
         root_pos = root_positions[root]
-        plt.text(
-            x=root_pos,
-            y=y,
-            s=f"$0$",
-            fontsize=20,
-            ha="center",
-            va="center",
-        )
+        if str(f.subs(x, root)) != "zoo":
+            plt.text(
+                x=root_pos,
+                y=y,
+                s=f"$0$",
+                fontsize=20,
+                ha="center",
+                va="center",
+            )
+        else:
+            plt.text(
+                x=root_pos + 0.005,
+                y=y,
+                s=f"$\\times$",
+                fontsize=24,
+                ha="center",
+                va="center",
+            )
 
 
 def draw_vertical_lines(
@@ -428,8 +464,32 @@ def plot(
     else:
         color_pos = color_neg = "black"
 
-    factors = get_factors(polynomial=f, x=x)  # compute linear factors
-    factors = sort_factors(factors=factors)  # Sort linear factors in ascending order.
+    if not f.is_polynomial():
+        # Assume a rational function
+        p, q = str(f).split("/")
+        p = sp.sympify(p)
+        q = sp.sympify(q)
+
+        original_variable = list(p.free_symbols)[0]
+        p = p.subs(original_variable, x)
+
+        original_variable = list(q.free_symbols)[0]
+        q = q.subs(original_variable, x)
+
+        # Order the factors
+        p_factors = get_factors(polynomial=p, x=x)
+
+        q_factors = get_factors(polynomial=q, x=x)
+
+        factors = p_factors + q_factors
+
+        factors = sort_factors(factors)
+
+    else:
+        factors = get_factors(polynomial=f, x=x)  # compute linear factors
+        factors = sort_factors(
+            factors=factors
+        )  # Sort linear factors in ascending order.
 
     print(f"Creating sign chart for f(x) = {f} = {f.factor()}")
 
@@ -458,7 +518,7 @@ def plot(
 
     # Draw factors
     if include_factors:
-        draw_factors(factors, roots, root_positions, ax, color_pos, color_neg, x)
+        draw_factors(f, factors, roots, root_positions, ax, color_pos, color_neg, x)
 
     # Draw sign lines for function
     draw_function(
