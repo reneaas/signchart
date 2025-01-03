@@ -82,20 +82,18 @@ def draw_factors(
         expression = str(factor.get("expression"))
         exponent = factor.get("exponent")
 
-        expression = f"${sp.latex(sp.sympify(expression))}$"
-        s = expression
         # Replace ** with ^ for sympy expressions to work with latex
-        # if "**" in str(expression):
-        #     expression = expression.replace("**", "^")
+        if "**" in str(expression):
+            expression = expression.replace("**", "^")
 
-        # # Remove multiplication signs
-        # if "*" in str(expression):
-        #     expression = expression.replace("*", "")
+        # Remove multiplication signs
+        if "*" in str(expression):
+            expression = expression.replace("*", "")
 
-        # if exponent > 1:
-        #     s = f"$({expression})^{exponent}$"
-        # else:
-        #     s = f"${expression}$"
+        if exponent > 1:
+            s = f"$({expression})^{exponent}$"
+        else:
+            s = f"${expression}$"
 
         plt.text(
             x=-0.1,
