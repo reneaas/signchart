@@ -82,7 +82,7 @@ def draw_factors(
         expression = str(factor.get("expression"))
         exponent = factor.get("exponent")
 
-        expression = f"${sp.latex(expression)}$"
+        expression = f"${sp.latex(sp.sympify(expression))}$"
         s = expression
         # Replace ** with ^ for sympy expressions to work with latex
         # if "**" in str(expression):
@@ -511,7 +511,7 @@ def plot(
     plt.xticks(
         ticks=positions,
         labels=[
-            f"${sp.latex(root)}$" if not generic_labels else f"$x_{i + 1}$"
+            f"${sp.latex(sp.sympify(root))}$" if not generic_labels else f"$x_{i + 1}$"
             for i, root in enumerate(roots)
         ],
         fontsize=16,
