@@ -82,18 +82,20 @@ def draw_factors(
         expression = str(factor.get("expression"))
         exponent = factor.get("exponent")
 
+        expression = f"${sp.latex(expression)}$"
+        s = expression
         # Replace ** with ^ for sympy expressions to work with latex
-        if "**" in str(expression):
-            expression = expression.replace("**", "^")
+        # if "**" in str(expression):
+        #     expression = expression.replace("**", "^")
 
-        # Remove multiplication signs
-        if "*" in str(expression):
-            expression = expression.replace("*", "")
+        # # Remove multiplication signs
+        # if "*" in str(expression):
+        #     expression = expression.replace("*", "")
 
-        if exponent > 1:
-            s = f"$({expression})^{exponent}$"
-        else:
-            s = f"${expression}$"
+        # if exponent > 1:
+        #     s = f"$({expression})^{exponent}$"
+        # else:
+        #     s = f"${expression}$"
 
         plt.text(
             x=-0.1,
@@ -105,7 +107,6 @@ def draw_factors(
         )
         if factor.get("root") == -np.inf:
             y_value = sp.sympify(factor.get("expression")).evalf(subs={x: 0})
-            print(y_value)
             if y_value > 0:
                 ax.plot(
                     [x_min, x_max],
@@ -510,7 +511,7 @@ def plot(
     plt.xticks(
         ticks=positions,
         labels=[
-            f"${root}$" if not generic_labels else f"$x_{i + 1}$"
+            f"${sp.latex(root)}$" if not generic_labels else f"$x_{i + 1}$"
             for i, root in enumerate(roots)
         ],
         fontsize=16,
