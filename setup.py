@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.1.19",
     author="René Alexander Ask",
     author_email="rene.ask@icloud.com",
-    description="Automatically generates sign charts for polynomial functions.",
+    description="Automatically generates sign charts for polynomial functions and rational functions.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/reneaas/signchart",
