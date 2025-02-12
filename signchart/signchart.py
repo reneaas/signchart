@@ -472,16 +472,20 @@ def plot(
         p = sp.sympify(p)
         q = sp.sympify(q)
 
-        original_variable = list(p.free_symbols)[0]
-        p = p.subs(original_variable, x)
+        try:
+            original_variable = list(p.free_symbols)[0]
+            p = p.subs(original_variable, x)
+            # Order the factors
+            p_factors = get_factors(polynomial=p, x=x)
+        except:
+            p_factors = []
 
-        original_variable = list(q.free_symbols)[0]
-        q = q.subs(original_variable, x)
-
-        # Order the factors
-        p_factors = get_factors(polynomial=p, x=x)
-
-        q_factors = get_factors(polynomial=q, x=x)
+        try:
+            original_variable = list(q.free_symbols)[0]
+            q = q.subs(original_variable, x)
+            q_factors = get_factors(polynomial=q, x=x)
+        except:
+            q_factors = []
 
         factors = p_factors + q_factors
 
