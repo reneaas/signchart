@@ -180,24 +180,33 @@ def draw_factors(
                 lw=2,
             )
 
-            if str(f.subs(x, root)) != "zoo":
-                plt.text(
-                    x=root_pos,
-                    y=(i + 1) * dy,
-                    s=f"$0$",
-                    fontsize=20,
-                    ha="center",
-                    va="center",
-                )
-            else:
-                plt.text(
-                    x=root_pos + 0.005,
-                    y=(i + 1) * dy,
-                    s=f"$\\times$",
-                    fontsize=24,
-                    ha="center",
-                    va="center",
-                )
+            plt.text(
+                x=root_pos,
+                y=(i + 1) * dy,
+                s=f"$0$",
+                fontsize=20,
+                ha="center",
+                va="center",
+            )
+
+            # if str(f.subs(x, root)) != "zoo":
+            #     plt.text(
+            #         x=root_pos,
+            #         y=(i + 1) * dy,
+            #         s=f"$0$",
+            #         fontsize=20,
+            #         ha="center",
+            #         va="center",
+            #     )
+            # else:
+            #     plt.text(
+            #         x=root_pos + 0.005,
+            #         y=(i + 1) * dy,
+            #         s=f"$\\times$",
+            #         fontsize=24,
+            #         ha="center",
+            #         va="center",
+            #     )
 
 
 def draw_function(
