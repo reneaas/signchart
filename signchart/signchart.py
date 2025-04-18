@@ -24,9 +24,9 @@ else:
 
 
 def savefig(dirname, fname):
-    dir = pathlib.Path(dirname)
-    dir.mkdir(parents=True, exist_ok=True)
-    plt.savefig(f"{dir}/{fname}")
+    import plotmath
+
+    plotmath.savefig(dirname, fname)
 
     return None
 
