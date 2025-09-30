@@ -415,7 +415,7 @@ def make_axis(x):
     ax.plot(1, 0, ">k", transform=ax.get_yaxis_transform(), clip_on=False)
 
     # Label the x-axis
-    ax.set_xlabel(f"${str(x)}$", fontsize=16, loc="right")
+    ax.set_xlabel(f"${str(x)}$", fontsize=20, loc="right")
 
     # Remove tick labels on y-axis
     plt.yticks([])
