@@ -80,6 +80,10 @@ def draw_factors(
     fontsize=14,
     factor_fontscale=0.9,
     zero_fontscale=1.1,
+    zero_x_offset=0.0,
+    zero_y_offset=0.0,
+    cross_x_offset=0.0,
+    cross_y_offset=0.0,
 ):
     x_min = -0.05
     x_max = 1.05
@@ -148,7 +152,7 @@ def draw_factors(
 
             if str(f.subs(x, root)) != "zoo":
                 plt.text(
-                    x=root_pos,
+                    x=root_pos + zero_x_offset,
                     y=(i + 1) * dy,
                     s=f"$0$",
                     fontsize=fontsize * zero_fontscale,
@@ -157,7 +161,7 @@ def draw_factors(
                 )
             else:
                 plt.text(
-                    x=root_pos + 0.005,
+                    x=root_pos + cross_x_offset,
                     y=(i + 1) * dy,
                     s=f"$\\times$",
                     fontsize=fontsize * zero_fontscale * 1.2,
@@ -184,7 +188,7 @@ def draw_factors(
             )
 
             plt.text(
-                x=root_pos,
+                x=root_pos + zero_x_offset,
                 y=(i + 1) * dy,
                 s=f"$0$",
                 fontsize=fontsize * zero_fontscale,
@@ -228,6 +232,8 @@ def draw_function(
     fontsize=14,
     function_fontscale=0.95,
     zero_fontscale=1.1,
+    zero_x_offset=0.0,
+    cross_x_offset=0.0,
 ):
 
     x_min = -0.05
@@ -318,6 +324,7 @@ def draw_function(
                 y=y,
                 s=f"$0$",
                 fontsize=fontsize * zero_fontscale,
+                symbol_gap=0.1,
                 ha="center",
                 va="center",
             )
@@ -582,6 +589,8 @@ def plot(
         fn_name,
         include_factors,
         fontsize=fontsize,
+        zero_x_offset=0.0,
+        cross_x_offset=0.0,
     )
 
     # Remove tick labels on y-axis
