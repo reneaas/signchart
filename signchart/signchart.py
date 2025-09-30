@@ -224,9 +224,6 @@ def draw_function(
     dx=0.02,
 ):
 
-    # roots = [factor.get("root") for factor in factors]
-    # roots.remove(-np.inf)
-    # print(roots)
     x_min = -0.05
     x_max = 1.05
 
@@ -437,6 +434,7 @@ def plot(
     include_factors=True,
     generic_labels=False,
     small_figsize=False,
+    figsize=None,
 ):
     """Draws a sign chart for a polynomial f.
 
@@ -555,7 +553,10 @@ def plot(
     plt.xlim(x_min, x_max)
 
     if include_factors:
-        fig.set_size_inches(8, 2 + int(0.7 * len(factors)))
+        if figsize:
+            fig.set_size_inches(figsize)
+        else:
+            fig.set_size_inches(8, 2 + int(0.7 * len(factors)))
 
     elif small_figsize:
         fig.set_size_inches(4, 1.5)
