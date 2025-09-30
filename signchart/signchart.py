@@ -340,59 +340,54 @@ def draw_vertical_lines(
     include_factors=True,
     dy=-1,
 ):
-    # Draw vertical lines to separate regions
-    offset_dy = 0.2
+    """Draw vertical separator lines that connect the x-axis (y=0) to each zero/cross symbol.
+
+    We compute all symbol y positions at the given root and draw individual segments between
+    consecutive symbol rows (centered vertically between the horizontal sign lines) so that
+    each vertical part ends exactly at the symbol center. This avoids awkward gaps and ensures
+    alignment.
+    """
 
     if include_factors:
-        # Collect y positions of zeros from factors
-        y_zeros_dict = {}
-        for i, factor in enumerate(factors):
-            if factor.get("root") != -np.inf:
-                root = factor.get("root")
-                y_zero = (i + 1) * dy
-                if root in y_zeros_dict:
-                    y_zeros_dict[root].append(y_zero)
-                else:
-                    y_zeros_dict[root] = [y_zero]
-        # Add y position of zero from function
-        y_function = (len(factors) + 1) * dy
+        symbol_rows = [
+            (i + 1) * dy
+            for i, factor in enumerate(factors)
+            if factor.get("root") != -np.inf
+        ]
+        function_row = (len(factors) + 1) * dy
     else:
-        y_zeros_dict = {}
-        y_function = dy
+        symbol_rows = []
+        function_row = dy
 
-    y_min = -0.4
-    y_max = y_function + 0.5
+    # All symbol centers for each root
+    all_symbol_rows = symbol_rows + [function_row]
+    if not all_symbol_rows:
+        return
 
+    y_top = (
+        min(all_symbol_rows) - abs(dy) * 0.4
+    )  # a bit above the topmost line for aesthetics
+    # y=0 is the x-axis; we only draw downward (negative direction) if dy is negative
     for root in roots:
         root_pos = root_positions[root]
-        # Collect y positions where zeros are placed at this root
-        zero_y_positions = []
-        # From factors
-        if root in y_zeros_dict:
-            zero_y_positions.extend(y_zeros_dict[root])
-        # From function
-        zero_y_positions.append(y_function)
-        # Now adjust zero_y_positions to include offset_dy
-        y_positions = [y_min]
-        for y_zero in zero_y_positions:
-            y_positions.extend([y_zero - offset_dy, y_zero + offset_dy])
-        y_positions.append(y_max)
-        y_positions = sorted(y_positions)
+        # Sort rows (they are negative values if dy=-1) so we iterate from closest to the axis downward
+        rows_sorted = sorted(all_symbol_rows, reverse=True)  # e.g. -1, -2, -3 ...
+        prev_y = 0  # start from axis
+        for row in rows_sorted:
+            # Draw segment from prev_y to symbol row (stop just shy of the symbol to avoid overdraw)
+            ax.plot(
+                [root_pos, root_pos], [prev_y, row], color="black", linestyle="-", lw=1
+            )
+            prev_y = row
 
-        # Now plot segments between pairs
-        for i in range(1, len(y_positions) - 1):
-            y_start = y_positions[i]
-            y_end = y_positions[i + 1]
-            # Skip the segments around the zeros
-            if (i % 2) == 0:
-                if y_end - y_start > 0:
-                    ax.plot(
-                        [root_pos, root_pos],
-                        [y_start, y_end],
-                        color="black",
-                        linestyle="-",
-                        lw=1,
-                    )
+        # Optionally extend a small tail below the last symbol for aesthetic symmetry
+        tail = abs(dy) * 0.15
+        ax.plot(
+            [root_pos, root_pos],
+            [rows_sorted[-1], rows_sorted[-1] - tail],
+            color="black",
+            lw=1,
+        )
 
 
 def make_axis(x):
@@ -440,12 +435,13 @@ def plot(
     include_factors=True,
     generic_labels=False,
     small_figsize=False,
-    figsize=None,
-    fontsize=14,
-    line_height=1.3,
+    figsize=(6, None),
+    fontsize=20,
+    line_height=2,
     auto_height=True,
-    dpi=100,
+    dpi=300,
     adjust_root_labels=True,
+    symbol_gap_scale=0.35,
 ):
     """Draws a sign chart for a polynomial f.
 
@@ -632,7 +628,7 @@ def plot(
 
     # (Optionally we could redraw with new dx – future enhancement.)
 
-    draw_vertical_lines(roots, root_positions, factors, ax, include_factors)
+    draw_vertical_lines(roots, root_positions, factors, ax, include_factors, dy=-1)
 
     plt.tight_layout()
 
