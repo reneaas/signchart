@@ -77,6 +77,9 @@ def draw_factors(
     x,
     dy=-1,
     dx=0.02,
+    fontsize=14,
+    factor_fontscale=0.9,
+    zero_fontscale=1.1,
 ):
     x_min = -0.05
     x_max = 1.05
@@ -102,7 +105,7 @@ def draw_factors(
             x=-0.1,
             y=(i + 1) * dy,
             s=s,
-            fontsize=16,
+            fontsize=fontsize * factor_fontscale,
             ha="right",
             va="center",
         )
@@ -148,7 +151,7 @@ def draw_factors(
                     x=root_pos,
                     y=(i + 1) * dy,
                     s=f"$0$",
-                    fontsize=20,
+                    fontsize=fontsize * zero_fontscale,
                     ha="center",
                     va="center",
                 )
@@ -157,7 +160,7 @@ def draw_factors(
                     x=root_pos + 0.005,
                     y=(i + 1) * dy,
                     s=f"$\\times$",
-                    fontsize=24,
+                    fontsize=fontsize * zero_fontscale * 1.2,
                     ha="center",
                     va="center",
                 )
@@ -184,7 +187,7 @@ def draw_factors(
                 x=root_pos,
                 y=(i + 1) * dy,
                 s=f"$0$",
-                fontsize=20,
+                fontsize=fontsize * zero_fontscale,
                 ha="center",
                 va="center",
             )
@@ -222,6 +225,9 @@ def draw_function(
     include_factors=True,
     dy=-1,
     dx=0.02,
+    fontsize=14,
+    function_fontscale=0.95,
+    zero_fontscale=1.1,
 ):
 
     x_min = -0.05
@@ -235,7 +241,7 @@ def draw_function(
         x=-0.1,
         y=y,
         s=f"${fn_name}$" if fn_name else f"$f({str(x)})$",
-        fontsize=16,
+        fontsize=fontsize * function_fontscale,
         ha="right",
         va="center",
     )
@@ -311,7 +317,7 @@ def draw_function(
                 x=root_pos,
                 y=y,
                 s=f"$0$",
-                fontsize=20,
+                fontsize=fontsize * zero_fontscale,
                 ha="center",
                 va="center",
             )
@@ -320,7 +326,7 @@ def draw_function(
                 x=root_pos + 0.005,
                 y=y,
                 s=f"$\\times$",
-                fontsize=24,
+                fontsize=fontsize * zero_fontscale * 1.2,
                 ha="center",
                 va="center",
             )
@@ -435,6 +441,11 @@ def plot(
     generic_labels=False,
     small_figsize=False,
     figsize=None,
+    fontsize=14,
+    line_height=1.3,
+    auto_height=True,
+    dpi=100,
+    adjust_root_labels=True,
 ):
     """Draws a sign chart for a polynomial f.
 
@@ -472,6 +483,12 @@ def plot(
         color_neg = "blue"
     else:
         color_pos = color_neg = "black"
+
+    if small_figsize:
+        warnings.warn(
+            "'small_figsize' argument is deprecated; please directly provide 'figsize'.",
+            DeprecationWarning,
+        )
 
     if not f.is_polynomial():
         # Assume a rational function
@@ -520,18 +537,41 @@ def plot(
     root_positions = dict(zip(roots, positions))
 
     # Set tick marks for roots of the polynomial
+    # Determine tick label fontsize adaptively if requested
+    tick_label_fontsize = fontsize
+    if adjust_root_labels and len(roots) > 0 and figsize is not None:
+        # Rough heuristic: total label width (chars * 0.6 * fontsize) should be < 0.85 * fig width in points
+        fig_width_pts = figsize[0] * 72
+        total_estimated_pts = 0
+        for root in roots:
+            label = f"{sp.latex(sp.sympify(root))}" if not generic_labels else "x_i"
+            total_estimated_pts += len(label) * 0.6 * fontsize
+        if total_estimated_pts > 0.85 * fig_width_pts:
+            scale = 0.85 * fig_width_pts / total_estimated_pts
+            tick_label_fontsize = max(6, fontsize * scale)
+
     plt.xticks(
         ticks=positions,
         labels=[
             f"${sp.latex(sp.sympify(root))}$" if not generic_labels else f"$x_{i + 1}$"
             for i, root in enumerate(roots)
         ],
-        fontsize=16,
+        fontsize=tick_label_fontsize,
     )
 
     # Draw factors
     if include_factors:
-        draw_factors(f, factors, roots, root_positions, ax, color_pos, color_neg, x)
+        draw_factors(
+            f,
+            factors,
+            roots,
+            root_positions,
+            ax,
+            color_pos,
+            color_neg,
+            x,
+            fontsize=fontsize,
+        )
 
     # Draw sign lines for function
     draw_function(
@@ -545,6 +585,7 @@ def plot(
         f,
         fn_name,
         include_factors,
+        fontsize=fontsize,
     )
 
     # Remove tick labels on y-axis
@@ -552,16 +593,44 @@ def plot(
 
     plt.xlim(x_min, x_max)
 
-    if include_factors:
-        if figsize:
-            fig.set_size_inches(figsize)
-        else:
-            fig.set_size_inches(8, 2 + int(0.7 * len(factors)))
+    # --- Figure sizing strategy ---
+    if figsize is None:
+        # Compute automatic height (inches) based on text metrics
+        rows = (len(factors) + 1) if include_factors else 1
+        row_height_in = (fontsize * line_height) / 72.0
+        base_padding_in = 0.6  # top+bottom
+        auto_h = base_padding_in + rows * row_height_in
+        fig_w = 8  # default width
+        fig_h = auto_h if auto_height else 2 + 0.7 * len(factors)
+        figsize = (fig_w, fig_h)
+    elif auto_height:
+        # Respect provided width but recompute height
+        rows = (len(factors) + 1) if include_factors else 1
+        row_height_in = (fontsize * line_height) / 72.0
+        base_padding_in = 0.6
+        height = base_padding_in + rows * row_height_in
+        figsize = (figsize[0], height)
 
-    elif small_figsize:
-        fig.set_size_inches(4, 1.5)
+    fig.set_dpi(dpi)
+    fig.set_size_inches(figsize)
+
+    # Recompute a dynamic dx based on approximate text width (using root labels)
+    if len(roots) > 0:
+        # Approximate average label character count
+        avg_chars = np.mean(
+            [len(sp.latex(sp.sympify(r))) if not generic_labels else 3 for r in roots]
+        )
+        # Convert label width in points -> inches -> data units
+        label_width_pts = max(1, avg_chars * 0.6 * tick_label_fontsize)
+        label_width_in = label_width_pts / 72.0
+        fig_w_in = figsize[0]
+        x_range = 1.10  # from -0.05 to 1.05
+        approx_label_data = (label_width_in / fig_w_in) * x_range
+        dynamic_dx = np.clip(approx_label_data * 0.3, 0.005, 0.06)
     else:
-        fig.set_size_inches(8, 2)
+        dynamic_dx = 0.02
+
+    # (Optionally we could redraw with new dx – future enhancement.)
 
     draw_vertical_lines(roots, root_positions, factors, ax, include_factors)
 
