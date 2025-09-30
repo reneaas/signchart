@@ -77,13 +77,6 @@ def draw_factors(
     x,
     dy=-1,
     dx=0.02,
-    fontsize=14,
-    factor_fontscale=0.9,
-    zero_fontscale=1.1,
-    zero_x_offset=0.0,
-    zero_y_offset=0.0,
-    cross_x_offset=0.0,
-    cross_y_offset=0.0,
 ):
     x_min = -0.05
     x_max = 1.05
@@ -109,7 +102,7 @@ def draw_factors(
             x=-0.1,
             y=(i + 1) * dy,
             s=s,
-            fontsize=fontsize * factor_fontscale,
+            fontsize=16,
             ha="right",
             va="center",
         )
@@ -152,19 +145,19 @@ def draw_factors(
 
             if str(f.subs(x, root)) != "zoo":
                 plt.text(
-                    x=root_pos + zero_x_offset,
+                    x=root_pos,
                     y=(i + 1) * dy,
                     s=f"$0$",
-                    fontsize=fontsize * zero_fontscale,
+                    fontsize=20,
                     ha="center",
                     va="center",
                 )
             else:
                 plt.text(
-                    x=root_pos + cross_x_offset,
+                    x=root_pos + 0.005,
                     y=(i + 1) * dy,
                     s=f"$\\times$",
-                    fontsize=fontsize * zero_fontscale * 1.2,
+                    fontsize=24,
                     ha="center",
                     va="center",
                 )
@@ -188,10 +181,10 @@ def draw_factors(
             )
 
             plt.text(
-                x=root_pos + zero_x_offset,
+                x=root_pos,
                 y=(i + 1) * dy,
                 s=f"$0$",
-                fontsize=fontsize * zero_fontscale,
+                fontsize=20,
                 ha="center",
                 va="center",
             )
@@ -229,12 +222,6 @@ def draw_function(
     include_factors=True,
     dy=-1,
     dx=0.02,
-    fontsize=14,
-    function_fontscale=0.95,
-    zero_fontscale=1.1,
-    zero_x_offset=0.0,
-    cross_x_offset=0.0,
-    cross_y_offset=0.0,
 ):
 
     x_min = -0.05
@@ -248,7 +235,7 @@ def draw_function(
         x=-0.1,
         y=y,
         s=f"${fn_name}$" if fn_name else f"$f({str(x)})$",
-        fontsize=fontsize * function_fontscale,
+        fontsize=16,
         ha="right",
         va="center",
     )
@@ -321,19 +308,19 @@ def draw_function(
         root_pos = root_positions[root]
         if str(f.subs(x, root)) != "zoo":
             plt.text(
-                x=root_pos + zero_x_offset,
+                x=root_pos,
                 y=y,
                 s=f"$0$",
-                fontsize=fontsize * zero_fontscale,
+                fontsize=20,
                 ha="center",
                 va="center",
             )
         else:
             plt.text(
-                x=root_pos + cross_x_offset,
-                y=y + cross_y_offset,
+                x=root_pos + 0.005,
+                y=y,
                 s=f"$\\times$",
-                fontsize=fontsize * zero_fontscale * 1.2,
+                fontsize=24,
                 ha="center",
                 va="center",
             )
@@ -346,46 +333,60 @@ def draw_vertical_lines(
     ax,
     include_factors=True,
     dy=-1,
-    symbol_gap=0.15,
 ):
-    """Draw vertical separator lines that connect the x-axis (y=0) to each zero/cross symbol.
-
-    We compute all symbol y positions at the given root and draw individual segments between
-    consecutive symbol rows (centered vertically between the horizontal sign lines) so that
-    each vertical part ends exactly at the symbol center. This avoids awkward gaps and ensures
-    alignment.
-    """
+    # Draw vertical lines to separate regions
+    offset_dy = 0.2
 
     if include_factors:
-        symbol_rows = [
-            (i + 1) * dy
-            for i, factor in enumerate(factors)
-            if factor.get("root") != -np.inf
-        ]
-        function_row = (len(factors) + 1) * dy
+        # Collect y positions of zeros from factors
+        y_zeros_dict = {}
+        for i, factor in enumerate(factors):
+            if factor.get("root") != -np.inf:
+                root = factor.get("root")
+                y_zero = (i + 1) * dy
+                if root in y_zeros_dict:
+                    y_zeros_dict[root].append(y_zero)
+                else:
+                    y_zeros_dict[root] = [y_zero]
+        # Add y position of zero from function
+        y_function = (len(factors) + 1) * dy
     else:
-        symbol_rows = []
-        function_row = dy
+        y_zeros_dict = {}
+        y_function = dy
 
-    all_symbol_rows = sorted(symbol_rows + [function_row], reverse=True)
-    if not all_symbol_rows:
-        return
+    y_min = -0.4
+    y_max = y_function + 0.5
 
     for root in roots:
         root_pos = root_positions[root]
-        prev_y = 0  # start at axis (y=0)
-        for row in all_symbol_rows:
-            upper = row + symbol_gap
-            lower = row - symbol_gap
-            # Draw from previous segment end to just above symbol
-            if prev_y > upper:  # when dy is negative prev_y closer to 0 is larger value
-                ax.plot([root_pos, root_pos], [prev_y, upper], color="black", lw=1)
-            else:
-                ax.plot([root_pos, root_pos], [upper, prev_y], color="black", lw=1)
-            prev_y = lower
-        # tail below last symbol for visual balance
-        tail = abs(dy) * 0.15
-        ax.plot([root_pos, root_pos], [prev_y, prev_y - tail], color="black", lw=1)
+        # Collect y positions where zeros are placed at this root
+        zero_y_positions = []
+        # From factors
+        if root in y_zeros_dict:
+            zero_y_positions.extend(y_zeros_dict[root])
+        # From function
+        zero_y_positions.append(y_function)
+        # Now adjust zero_y_positions to include offset_dy
+        y_positions = [y_min]
+        for y_zero in zero_y_positions:
+            y_positions.extend([y_zero - offset_dy, y_zero + offset_dy])
+        y_positions.append(y_max)
+        y_positions = sorted(y_positions)
+
+        # Now plot segments between pairs
+        for i in range(1, len(y_positions) - 1):
+            y_start = y_positions[i]
+            y_end = y_positions[i + 1]
+            # Skip the segments around the zeros
+            if (i % 2) == 0:
+                if y_end - y_start > 0:
+                    ax.plot(
+                        [root_pos, root_pos],
+                        [y_start, y_end],
+                        color="black",
+                        linestyle="-",
+                        lw=1,
+                    )
 
 
 def make_axis(x):
@@ -414,7 +415,7 @@ def make_axis(x):
     ax.plot(1, 0, ">k", transform=ax.get_yaxis_transform(), clip_on=False)
 
     # Label the x-axis
-    ax.set_xlabel(f"${str(x)}$", fontsize=20, loc="right")
+    ax.set_xlabel(f"${str(x)}$", fontsize=16, loc="right")
 
     # Remove tick labels on y-axis
     plt.yticks([])
@@ -433,19 +434,9 @@ def plot(
     include_factors=True,
     generic_labels=False,
     small_figsize=False,
-    figsize=(6, None),
-    fontsize=20,
-    line_height=2,
-    auto_height=True,
-    dpi=300,
-    adjust_root_labels=True,
-    symbol_gap_scale=None,
-    zero_x_offset=0.0,
-    cross_x_offset=0.0,
-    cross_y_offset=0.04,
-    dynamic_layout=True,
+    figsize=None,
 ):
-    """Draws a sign chart (sign diagram) for a polynomial or rational function f.
+    """Draws a sign chart for a polynomial f.
 
     Args:
         f (sp.Expr, str):
@@ -462,20 +453,6 @@ def plot(
             Uses generic labels for roots: x_1, x_2, ..., x_N. Default: `False`.
         small_figsize (bool, optional):
             Enables rescaling of the figure for a smaller figure size. Default: `False`.
-        figsize (tuple(float,float|None)): (width, height). If height is None and auto_height=True,
-            a suitable height is computed from number of rows and fontsize.
-        fontsize (int): Base fontsize for textual elements (points).
-        line_height (float): Multiplier converting fontsize to per-row vertical spacing (in points).
-        auto_height (bool): If True, compute / override figure height based on content.
-        dpi (int): Figure DPI.
-        adjust_root_labels (bool): Shrink root tick labels if they would overflow horizontally.
-        symbol_gap_scale (float|None): If float, manual fraction of row spacing reserved as vertical gap around
-            symbols for vertical lines (0 < value < 0.5). If None, an automatic value is derived from line_height.
-        zero_x_offset (float): Horizontal fine adjustment for the '0' glyph (data units).
-        cross_x_offset (float): Horizontal fine adjustment for the '×' symbol (data units).
-        cross_y_offset (float): Vertical fine adjustment for '×' (data units).
-        dynamic_layout (bool): If True, compute horizontal padding (dx) and symbol gap automatically from
-            figure size & fontsize. Disabling reverts to legacy static spacing.
 
     Returns:
         fig (plt.figure)
@@ -495,12 +472,6 @@ def plot(
         color_neg = "blue"
     else:
         color_pos = color_neg = "black"
-
-    if small_figsize:
-        warnings.warn(
-            "'small_figsize' argument is deprecated; please directly provide 'figsize'.",
-            DeprecationWarning,
-        )
 
     if not f.is_polynomial():
         # Assume a rational function
@@ -549,94 +520,18 @@ def plot(
     root_positions = dict(zip(roots, positions))
 
     # Set tick marks for roots of the polynomial
-    # Determine tick label fontsize adaptively if requested
-    tick_label_fontsize = fontsize
-    if adjust_root_labels and len(roots) > 0 and figsize is not None:
-        # Rough heuristic: total label width (chars * 0.6 * fontsize) should be < 0.85 * fig width in points
-        fig_width_pts = figsize[0] * 72
-        total_estimated_pts = 0
-        for root in roots:
-            label = f"{sp.latex(sp.sympify(root))}" if not generic_labels else "x_i"
-            total_estimated_pts += len(label) * 0.6 * fontsize
-        if total_estimated_pts > 0.85 * fig_width_pts:
-            scale = 0.85 * fig_width_pts / total_estimated_pts
-            tick_label_fontsize = max(6, fontsize * scale)
-
     plt.xticks(
         ticks=positions,
         labels=[
             f"${sp.latex(sp.sympify(root))}$" if not generic_labels else f"$x_{i + 1}$"
             for i, root in enumerate(roots)
         ],
-        fontsize=tick_label_fontsize,
+        fontsize=16,
     )
-
-    # --- Figure sizing strategy (pre-spacing calculations) ---
-    if figsize is None:
-        rows = (len(factors) + 1) if include_factors else 1
-        row_height_in = (fontsize * line_height) / 72.0
-        base_padding_in = 0.6
-        auto_h = base_padding_in + rows * row_height_in
-        fig_w = 8
-        fig_h = auto_h if auto_height else 2 + 0.7 * len(factors)
-        figsize = (fig_w, fig_h)
-    elif auto_height and (figsize[1] is None or isinstance(figsize[1], type(None))):
-        # Provided only width
-        rows = (len(factors) + 1) if include_factors else 1
-        row_height_in = (fontsize * line_height) / 72.0
-        base_padding_in = 0.6
-        fig_h = base_padding_in + rows * row_height_in
-        figsize = (figsize[0], fig_h)
-
-    fig.set_dpi(dpi)
-    fig.set_size_inches(figsize)
-
-    # Horizontal dynamic spacing around roots (dx)
-    if len(roots) > 0:
-        avg_chars = np.mean(
-            [len(sp.latex(sp.sympify(r))) if not generic_labels else 3 for r in roots]
-        )
-        label_width_pts = max(1, avg_chars * 0.6 * tick_label_fontsize)
-        label_width_in = label_width_pts / 72.0
-        fig_w_in = figsize[0]
-        x_range = 1.10  # data span from -0.05 to 1.05
-        approx_label_data = (label_width_in / fig_w_in) * x_range
-        dynamic_dx = np.clip(approx_label_data * 0.35, 0.007, 0.08)
-    else:
-        dynamic_dx = 0.02
-
-    if not dynamic_layout:
-        dynamic_dx = 0.02  # revert to legacy fixed spacing
-
-    # Automatic symbol gap fraction if not provided
-    if symbol_gap_scale is None:
-        # A heuristic: smaller line_height => tighter rows => need smaller relative gap.
-        # Gap fraction roughly half the inverse of line_height, clamped.
-        auto_gap = 0.5 / max(1.0, line_height)
-        symbol_gap_fraction = float(np.clip(auto_gap, 0.18, 0.42))
-    else:
-        symbol_gap_fraction = float(np.clip(symbol_gap_scale, 0.05, 0.49))
-
-    # Minor automatic cross vertical fine-tune if dynamic_layout and user left default
-    if dynamic_layout and cross_y_offset == 0.04:
-        cross_y_offset = 0.06 / line_height
 
     # Draw factors
     if include_factors:
-        draw_factors(
-            f,
-            factors,
-            roots,
-            root_positions,
-            ax,
-            color_pos,
-            color_neg,
-            x,
-            fontsize=fontsize,
-            zero_x_offset=zero_x_offset,
-            cross_x_offset=cross_x_offset,
-            dx=dynamic_dx,
-        )
+        draw_factors(f, factors, roots, root_positions, ax, color_pos, color_neg, x)
 
     # Draw sign lines for function
     draw_function(
@@ -650,11 +545,6 @@ def plot(
         f,
         fn_name,
         include_factors,
-        fontsize=fontsize,
-        zero_x_offset=zero_x_offset,
-        cross_x_offset=cross_x_offset,
-        cross_y_offset=cross_y_offset,
-        dx=dynamic_dx,
     )
 
     # Remove tick labels on y-axis
@@ -662,17 +552,18 @@ def plot(
 
     plt.xlim(x_min, x_max)
 
-    # symbol_gap_fraction is a fraction of the row spacing (|dy| = 1). Since dy is -1, fraction == data units.
-    symbol_gap = symbol_gap_fraction
-    draw_vertical_lines(
-        roots,
-        root_positions,
-        factors,
-        ax,
-        include_factors,
-        dy=-1,
-        symbol_gap=symbol_gap,
-    )
+    if include_factors:
+        if figsize:
+            fig.set_size_inches(figsize)
+        else:
+            fig.set_size_inches(8, 2 + int(0.7 * len(factors)))
+
+    elif small_figsize:
+        fig.set_size_inches(4, 1.5)
+    else:
+        fig.set_size_inches(8, 2)
+
+    draw_vertical_lines(roots, root_positions, factors, ax, include_factors)
 
     plt.tight_layout()
 
