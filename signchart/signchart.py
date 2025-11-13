@@ -48,21 +48,45 @@ def get_factors(polynomial, x):
 
     for linear_factor, exponent in factor_list[1]:
         exponent = int(exponent)
-        root = sp.solve(linear_factor, x)
-        root_value = root[0] if root else -np.inf
-        linear_factors.append(
-            {
-                "expression": linear_factor,
-                "exponent": exponent,
-                "root": root_value,
-            }
-        )
+        roots = sp.solve(linear_factor, x)
+
+        # Handle factors that may have multiple real roots (e.g., quadratics like x^2 - 2)
+        if not roots:
+            linear_factors.append(
+                {
+                    "expression": linear_factor,
+                    "exponent": exponent,
+                    "root": -np.inf,
+                }
+            )
+        else:
+            # For each root of the factor, create a separate entry
+            for root_value in roots:
+                # Only include real roots
+                if root_value.is_real:
+                    linear_factors.append(
+                        {
+                            "expression": sp.simplify(x - root_value),
+                            "exponent": 1,  # Each root appears as a linear factor
+                            "root": root_value,
+                        }
+                    )
 
     return linear_factors
 
 
 def sort_factors(factors):
-    factors = sorted(factors, key=lambda x: x.get("root"))
+    def get_numeric_root(factor):
+        root = factor.get("root")
+        if root == -np.inf:
+            return -np.inf
+        try:
+            # Try to convert symbolic roots to float for comparison
+            return float(root.evalf())
+        except (AttributeError, TypeError):
+            return float(root)
+
+    factors = sorted(factors, key=get_numeric_root)
     return factors
 
 
