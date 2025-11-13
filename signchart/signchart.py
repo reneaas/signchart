@@ -37,18 +37,18 @@ def show():
 
 def get_zeros_and_singularities(f, x, domain=None):
     """Find zeros and singularities (poles/discontinuities) of arbitrary functions.
-    
+
     Args:
         f: sympy expression
         x: variable symbol
         domain: optional tuple (x_min, x_max) to search for numerical zeros
-        
+
     Returns:
         dict with 'zeros' and 'singularities' lists containing symbolic/numeric values
     """
     zeros = []
     singularities = []
-    
+
     # Detect singularities FIRST (for rational/transcendental functions)
     try:
         # Check denominator for rational functions
@@ -56,17 +56,17 @@ def get_zeros_and_singularities(f, x, domain=None):
         if denom != 1:
             denom_zeros = sp.solve(denom, x, domain=sp.S.Reals)
             for z in denom_zeros:
-                if z.is_real or (hasattr(z, 'is_real') and z.is_real is not False):
+                if z.is_real or (hasattr(z, "is_real") and z.is_real is not False):
                     singularities.append(z)
     except:
         pass
-    
+
     # Try symbolic solving for zeros
     try:
         symbolic_zeros = sp.solve(f, x, domain=sp.S.Reals)
         if symbolic_zeros:
             for z in symbolic_zeros:
-                if z.is_real or (hasattr(z, 'is_real') and z.is_real is not False):
+                if z.is_real or (hasattr(z, "is_real") and z.is_real is not False):
                     # Make sure this isn't a singularity
                     is_sing = False
                     for sing in singularities:
@@ -80,15 +80,15 @@ def get_zeros_and_singularities(f, x, domain=None):
                         zeros.append(z)
     except (NotImplementedError, ValueError):
         pass
-    
+
     # For transcendental/complex functions, find numerical zeros if domain provided
     if domain:
         try:
             # Sample points to find sign changes
             x_min, x_max = domain
             test_points = np.linspace(float(x_min), float(x_max), 1000)
-            f_lamb = sp.lambdify(x, f, modules=['numpy'])
-            
+            f_lamb = sp.lambdify(x, f, modules=["numpy"])
+
             # Suppress warnings for evaluation at singularities
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
@@ -111,31 +111,34 @@ def get_zeros_and_singularities(f, x, domain=None):
                             valid_x.append(xp)
                     except:
                         pass
-                
+
                 y_vals = np.array(y_vals)
                 valid_x = np.array(valid_x)
-                
+
                 # Find sign changes (potential zeros) and near-zero values
                 numerical_zeros = []
                 if len(y_vals) > 1:
                     # Check for sign changes
                     signs = np.sign(y_vals)
                     sign_changes = np.where(np.diff(signs) != 0)[0]
-                    
+
                     for idx in sign_changes:
                         # Skip if both values are zero (avoid duplicates)
-                        if abs(y_vals[idx]) < 1e-10 and abs(y_vals[idx+1]) < 1e-10:
+                        if abs(y_vals[idx]) < 1e-10 and abs(y_vals[idx + 1]) < 1e-10:
                             continue
                         # Refine zero location
                         try:
                             from scipy.optimize import brentq
-                            x_zero = brentq(f_lamb, valid_x[idx], valid_x[idx+1], xtol=1e-10)
+
+                            x_zero = brentq(
+                                f_lamb, valid_x[idx], valid_x[idx + 1], xtol=1e-10
+                            )
                             numerical_zeros.append(sp.Float(x_zero))
                         except:
                             # Use midpoint if brentq fails
-                            x_zero = (valid_x[idx] + valid_x[idx+1]) / 2
+                            x_zero = (valid_x[idx] + valid_x[idx + 1]) / 2
                             numerical_zeros.append(sp.Float(x_zero))
-                    
+
                     # Also check for near-zero values at sample points
                     near_zero_idx = np.where(np.abs(y_vals) < 1e-10)[0]
                     for idx in near_zero_idx:
@@ -148,14 +151,20 @@ def get_zeros_and_singularities(f, x, domain=None):
                             y_left = float(f_lamb(float(x_val) - eps))
                             y_right = float(f_lamb(float(x_val) + eps))
                             # Only add if function is continuous and actually crosses zero
-                            if (np.isfinite(y_left) and np.isfinite(y_right) and 
-                                abs(y_val) < 1e-8):
+                            if (
+                                np.isfinite(y_left)
+                                and np.isfinite(y_right)
+                                and abs(y_val) < 1e-8
+                            ):
                                 # Avoid duplicates
-                                if not any(abs(float(z - x_val)) < 1e-8 for z in numerical_zeros):
+                                if not any(
+                                    abs(float(z - x_val)) < 1e-8
+                                    for z in numerical_zeros
+                                ):
                                     numerical_zeros.append(x_val)
                         except:
                             pass
-                
+
                 # Merge symbolic and numerical zeros, removing duplicates and singularities
                 all_zeros = list(zeros)  # Start with symbolic zeros
                 for nz in numerical_zeros:
@@ -168,10 +177,10 @@ def get_zeros_and_singularities(f, x, domain=None):
                                 break
                         except:
                             pass
-                    
+
                     if is_singularity:
                         continue  # Skip singularities
-                    
+
                     # Check if this zero is already in the list (symbolic or numeric)
                     is_duplicate = False
                     for z in all_zeros:
@@ -183,12 +192,12 @@ def get_zeros_and_singularities(f, x, domain=None):
                             pass
                     if not is_duplicate:
                         all_zeros.append(nz)
-                
+
                 zeros = all_zeros
         except:
             pass
-    
-    return {'zeros': zeros, 'singularities': singularities}
+
+    return {"zeros": zeros, "singularities": singularities}
 
 
 def get_factors(polynomial, x):
@@ -263,21 +272,20 @@ def draw_factors(
     x_max = 1.05
     # Draw horizontal sign lines for each factor
     for i, factor in enumerate(factors):
-        expression = str(factor.get("expression"))
+        expression = factor.get("expression")
         exponent = factor.get("exponent")
 
-        # Replace ** with ^ for sympy expressions to work with latex
-        if "**" in str(expression):
-            expression = expression.replace("**", "^")
-
-        # Remove multiplication signs
-        if "*" in str(expression):
-            expression = expression.replace("*", "")
+        # Use LaTeX rendering for proper mathematical notation
+        try:
+            expression_latex = sp.latex(expression)
+        except:
+            # Fallback to string representation if latex fails
+            expression_latex = str(expression)
 
         if exponent > 1:
-            s = f"$({expression})^{exponent}$"
+            s = f"$({expression_latex})^{{{exponent}}}$"
         else:
-            s = f"${expression}$"
+            s = f"${expression_latex}$"
 
         plt.text(
             x=-0.1,
@@ -663,7 +671,7 @@ def plot(
     # Determine function type and extract zeros/singularities
     is_polynomial = f.is_polynomial()
     is_rational = False
-    
+
     if is_polynomial:
         # Use existing polynomial factorization
         factors = get_factors(polynomial=f, x=x)
@@ -684,37 +692,43 @@ def plot(
                 is_rational = False
                 # Use general zero finding
                 result = get_zeros_and_singularities(f, x, domain=domain)
-                zeros = result['zeros']
-                singularities = result['singularities']
-                
+                zeros = result["zeros"]
+                singularities = result["singularities"]
+
                 # Create pseudo-factors for zeros and singularities
                 factors = []
                 for z in zeros:
-                    factors.append({
-                        "expression": f"f({x})",
-                        "exponent": 1,
-                        "root": z,
-                    })
+                    factors.append(
+                        {
+                            "expression": f"f({x})",
+                            "exponent": 1,
+                            "root": z,
+                        }
+                    )
                 for s in singularities:
-                    factors.append({
-                        "expression": f"discontinuity",
-                        "exponent": 1,
-                        "root": s,
-                    })
+                    factors.append(
+                        {
+                            "expression": f"discontinuity",
+                            "exponent": 1,
+                            "root": s,
+                        }
+                    )
                 factors = sort_factors(factors)
                 # For transcendental functions, don't show individual factors
                 include_factors = False
         except:
             # Fallback: general function
             result = get_zeros_and_singularities(f, x, domain=domain)
-            zeros = result['zeros']
+            zeros = result["zeros"]
             factors = []
             for z in zeros:
-                factors.append({
-                    "expression": f"f({x})",
-                    "exponent": 1,
-                    "root": z,
-                })
+                factors.append(
+                    {
+                        "expression": f"f({x})",
+                        "exponent": 1,
+                        "root": z,
+                    }
+                )
             factors = sort_factors(factors)
             include_factors = False
 
