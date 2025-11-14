@@ -226,14 +226,14 @@ def get_factors(polynomial, x):
                 }
             )
         else:
-            # For each root of the factor, create a separate entry
+            # For each root of the factor, create a separate entry with the correct exponent
             for root_value in roots:
                 # Only include real roots
                 if root_value.is_real:
                     linear_factors.append(
                         {
                             "expression": sp.simplify(x - root_value),
-                            "exponent": 1,  # Each root appears as a linear factor
+                            "exponent": exponent,  # Use the actual exponent from factorization
                             "root": root_value,
                         }
                     )
@@ -241,16 +241,193 @@ def get_factors(polynomial, x):
     return linear_factors
 
 
+def get_transcendental_factors(f, x, zeros, singularities):
+    """Extract factors from transcendental or composite functions.
+
+    Args:
+        f: sympy expression
+        x: variable symbol
+        zeros: list of zeros found numerically/symbolically
+        singularities: list of singularities (poles)
+
+    Returns:
+        list of factor dictionaries (one per unique expression+exponent, with all roots)
+    """
+    factors = []
+
+    try:
+        # Try to factor the function
+        factored = sp.factor(f)
+
+        # Check if it's a power expression (e.g., cos(x)**3)
+        if factored.is_Pow:
+            base = factored.base
+            exponent = int(factored.exp) if factored.exp.is_integer else 1
+
+            # Find zeros of the base
+            base_zeros = []
+            try:
+                base_zeros_sym = sp.solve(base, x, domain=sp.S.Reals)
+                for z in base_zeros_sym:
+                    if z.is_real:
+                        # Match with known zeros
+                        for known_zero in zeros:
+                            try:
+                                if (
+                                    abs(float(z.evalf()) - float(known_zero.evalf()))
+                                    < 1e-8
+                                ):
+                                    base_zeros.append(known_zero)
+                                    break
+                            except:
+                                pass
+            except:
+                # If symbolic solve fails, use all known zeros
+                base_zeros = zeros
+
+            # Create single factor with all zeros
+            if base_zeros:
+                factors.append(
+                    {
+                        "expression": base,
+                        "exponent": exponent,
+                        "roots": base_zeros,  # Changed: store all roots together
+                    }
+                )
+
+        # If it's a product, try to extract individual factors
+        elif factored.is_Mul:
+            # Group factors by (expression, exponent) to avoid duplicates
+            factor_dict = {}
+
+            for arg in factored.args:
+                # Check if this arg is a power
+                if arg.is_Pow:
+                    base = arg.base
+                    exponent = int(arg.exp) if arg.exp.is_integer else 1
+                    expr_to_use = base
+                else:
+                    expr_to_use = arg
+                    exponent = 1
+
+                # Create a key for grouping
+                key = (str(expr_to_use), exponent)
+
+                if key not in factor_dict:
+                    factor_dict[key] = {
+                        "expression": expr_to_use,
+                        "exponent": exponent,
+                        "zeros": [],
+                        "singularities": [],
+                    }
+
+                # Find zeros of this factor
+                try:
+                    arg_zeros = sp.solve(expr_to_use, x, domain=sp.S.Reals)
+                    for z in arg_zeros:
+                        if z.is_real:
+                            # Check if this zero is in our list
+                            for known_zero in zeros:
+                                try:
+                                    if (
+                                        abs(
+                                            float(z.evalf()) - float(known_zero.evalf())
+                                        )
+                                        < 1e-8
+                                    ):
+                                        if known_zero not in factor_dict[key]["zeros"]:
+                                            factor_dict[key]["zeros"].append(known_zero)
+                                        break
+                                except:
+                                    pass
+                except:
+                    pass
+
+                # Check for singularities in denominator
+                try:
+                    numer, denom = expr_to_use.as_numer_denom()
+                    if denom != 1:
+                        denom_zeros = sp.solve(denom, x, domain=sp.S.Reals)
+                        for z in denom_zeros:
+                            if z.is_real:
+                                for known_sing in singularities:
+                                    try:
+                                        if (
+                                            abs(
+                                                float(z.evalf())
+                                                - float(known_sing.evalf())
+                                            )
+                                            < 1e-8
+                                        ):
+                                            if (
+                                                known_sing
+                                                not in factor_dict[key]["singularities"]
+                                            ):
+                                                factor_dict[key][
+                                                    "singularities"
+                                                ].append(known_sing)
+                                            break
+                                    except:
+                                        pass
+                except:
+                    pass
+
+            # Convert grouped factors to list, with roots (zeros + singularities)
+            for factor_info in factor_dict.values():
+                all_roots = factor_info["zeros"] + factor_info["singularities"]
+                if all_roots:
+                    factors.append(
+                        {
+                            "expression": factor_info["expression"],
+                            "exponent": factor_info["exponent"],
+                            "roots": all_roots,
+                        }
+                    )
+        else:
+            # Not a product or power, show as single factor with all zeros
+            all_roots = zeros + singularities
+            if all_roots:
+                factors.append(
+                    {
+                        "expression": factored,
+                        "exponent": 1,
+                        "roots": all_roots,
+                    }
+                )
+    except:
+        # Fallback: just use the original function
+        all_roots = zeros + singularities
+        if all_roots:
+            factors.append(
+                {
+                    "expression": f,
+                    "exponent": 1,
+                    "roots": all_roots,
+                }
+            )
+
+    return factors
+
+
 def sort_factors(factors):
     def get_numeric_root(factor):
-        root = factor.get("root")
-        if root == -np.inf:
+        # Handle both old format ("root") and new format ("roots")
+        if "roots" in factor and factor["roots"]:
+            # For new format, use the first root for sorting
+            root = factor["roots"][0]
+        else:
+            root = factor.get("root")
+
+        if root == -np.inf or root is None:
             return -np.inf
         try:
             # Try to convert symbolic roots to float for comparison
             return float(root.evalf())
         except (AttributeError, TypeError):
-            return float(root)
+            try:
+                return float(root)
+            except:
+                return -np.inf
 
     factors = sorted(factors, key=get_numeric_root)
     return factors
@@ -275,6 +452,13 @@ def draw_factors(
         expression = factor.get("expression")
         exponent = factor.get("exponent")
 
+        # Handle both old format (single "root") and new format (multiple "roots")
+        factor_roots = (
+            factor.get("roots", [factor.get("root")])
+            if factor.get("root") is not None or factor.get("roots")
+            else []
+        )
+
         # Use LaTeX rendering for proper mathematical notation
         try:
             expression_latex = sp.latex(expression)
@@ -295,8 +479,10 @@ def draw_factors(
             ha="right",
             va="center",
         )
-        if factor.get("root") == -np.inf:
-            y_value = sp.sympify(factor.get("expression")).evalf(subs={x: 0})
+
+        # If no real roots (constant factor)
+        if -np.inf in factor_roots or not factor_roots:
+            y_value = sp.sympify(expression).evalf(subs={x: 0})
             if y_value > 0:
                 ax.plot(
                     [x_min, x_max],
@@ -313,89 +499,104 @@ def draw_factors(
                     linestyle="--",
                     lw=2,
                 )
-        elif factor.get("exponent") % 2 == 0:
-            root = factor.get("root")
-            root_pos = root_positions[root]
-
-            ax.plot(
-                [x_min, root_pos - dx],
-                [(i + 1) * dy, (i + 1) * dy],
-                color=color_pos,
-                linestyle="-",
-                lw=2,
-            )
-            ax.plot(
-                [root_pos + dx, x_max],
-                [(i + 1) * dy, (i + 1) * dy],
-                color=color_pos,
-                linestyle="-",
-                lw=2,
-            )
-
-            if str(f.subs(x, root)) != "zoo":
-                plt.text(
-                    x=root_pos,
-                    y=(i + 1) * dy,
-                    s=f"$0$",
-                    fontsize=20,
-                    ha="center",
-                    va="center",
-                )
-            else:
-                plt.text(
-                    x=root_pos + 0.005,
-                    y=(i + 1) * dy,
-                    s=f"$\\times$",
-                    fontsize=24,
-                    ha="center",
-                    va="center",
-                )
         else:
-            root = factor.get("root")
-            root_pos = root_positions[root]
-
-            ax.plot(
-                [x_min, root_pos - dx],
-                [(i + 1) * dy, (i + 1) * dy],
-                color=color_neg,
-                linestyle="--",
-                lw=2,
-            )
-            ax.plot(
-                [root_pos + dx, x_max],
-                [(i + 1) * dy, (i + 1) * dy],
-                color=color_pos,
-                linestyle="-",
-                lw=2,
+            # Sort roots for drawing
+            sorted_roots = sorted(
+                [r for r in factor_roots if r != -np.inf],
+                key=lambda r: float(r.evalf()),
             )
 
-            plt.text(
-                x=root_pos,
-                y=(i + 1) * dy,
-                s=f"$0$",
-                fontsize=20,
-                ha="center",
-                va="center",
+            # Determine if even exponent (doesn't change sign) or odd (changes sign)
+            is_even_exponent = exponent % 2 == 0
+
+            # Create the full expression with exponent for evaluation
+            expr = expression
+            if exponent > 1:
+                full_expr = expr**exponent
+            else:
+                full_expr = expr
+
+            # Draw segments between roots
+            # We need to evaluate signs in each interval
+            all_positions = (
+                [x_min] + [root_positions[r] for r in sorted_roots] + [x_max]
             )
 
-            # if str(f.subs(x, root)) != "zoo":
-            #     plt.text(
-            #         x=root_pos,
-            #         y=(i + 1) * dy,
-            #         s=f"$0$",
-            #         fontsize=20,
-            #         ha="center",
-            #         va="center",
-            #     )
-            # else:
-            #     plt.text(
-            #         x=root_pos + 0.005,
-            #         y=(i + 1) * dy,
-            #         s=f"$\\times$",
-            #         fontsize=24,
-            #         ha="center",
-            #         va="center",
-            #     )
+            for j in range(len(all_positions) - 1):
+                left_pos = all_positions[j]
+                right_pos = all_positions[j + 1]
+
+                # Add gap around roots (except at boundaries)
+                if j > 0:  # Not the leftmost segment
+                    left_pos += dx
+                if j < len(all_positions) - 2:  # Not the rightmost segment
+                    right_pos -= dx
+
+                # Map position back to actual x value for evaluation
+                # Position is normalized 0-1, map to actual domain
+                if j < len(sorted_roots):
+                    if j == 0:
+                        # Before first root
+                        test_x = float(sorted_roots[0].evalf()) - 1
+                    else:
+                        # Between roots
+                        test_x = (
+                            float(sorted_roots[j - 1].evalf())
+                            + float(sorted_roots[j].evalf())
+                        ) / 2
+                else:
+                    # After last root
+                    test_x = float(sorted_roots[-1].evalf()) + 1
+
+                # Evaluate sign at test point
+                try:
+                    y_val = sp.sympify(full_expr).evalf(subs={x: test_x})
+                    is_positive = y_val > 0
+                    color = color_pos if is_positive else color_neg
+                    linestyle = "-" if is_positive else "--"
+                except:
+                    # Fallback
+                    color = color_pos
+                    linestyle = "-"
+
+                # Draw segment
+                ax.plot(
+                    [left_pos, right_pos],
+                    [(i + 1) * dy, (i + 1) * dy],
+                    color=color,
+                    linestyle=linestyle,
+                    lw=2,
+                )
+
+            # Draw markers at roots
+            for root in sorted_roots:
+                root_pos = root_positions[root]
+
+                # Check if it's a zero or singularity
+                try:
+                    f_at_root = str(f.subs(x, root))
+                    is_singularity = f_at_root == "zoo" or "zoo" in f_at_root
+                except:
+                    is_singularity = False
+
+                if is_singularity:
+                    plt.text(
+                        x=root_pos + 0.005,
+                        y=(i + 1) * dy,
+                        s=f"$\\times$",
+                        fontsize=24,
+                        ha="center",
+                        va="center",
+                    )
+                else:
+                    plt.text(
+                        x=root_pos,
+                        y=(i + 1) * dy,
+                        s=f"$0$",
+                        fontsize=20,
+                        ha="center",
+                        va="center",
+                    )
 
 
 def draw_function(
@@ -530,13 +731,20 @@ def draw_vertical_lines(
         # Collect y positions of zeros from factors
         y_zeros_dict = {}
         for i, factor in enumerate(factors):
-            if factor.get("root") != -np.inf:
-                root = factor.get("root")
-                y_zero = (i + 1) * dy
-                if root in y_zeros_dict:
-                    y_zeros_dict[root].append(y_zero)
-                else:
-                    y_zeros_dict[root] = [y_zero]
+            # Handle both old format ("root") and new format ("roots")
+            factor_roots = (
+                factor.get("roots", [factor.get("root")])
+                if factor.get("root") is not None or factor.get("roots")
+                else []
+            )
+
+            for root in factor_roots:
+                if root != -np.inf:
+                    y_zero = (i + 1) * dy
+                    if root in y_zeros_dict:
+                        y_zeros_dict[root].append(y_zero)
+                    else:
+                        y_zeros_dict[root] = [y_zero]
         # Add y position of zero from function
         y_function = (len(factors) + 1) * dy
     else:
@@ -695,50 +903,40 @@ def plot(
                 zeros = result["zeros"]
                 singularities = result["singularities"]
 
-                # Create pseudo-factors for zeros and singularities
-                factors = []
-                for z in zeros:
-                    factors.append(
-                        {
-                            "expression": f"f({x})",
-                            "exponent": 1,
-                            "root": z,
-                        }
-                    )
-                for s in singularities:
-                    factors.append(
-                        {
-                            "expression": f"discontinuity",
-                            "exponent": 1,
-                            "root": s,
-                        }
-                    )
+                # Extract factors from transcendental function
+                factors = get_transcendental_factors(f, x, zeros, singularities)
                 factors = sort_factors(factors)
-                # For transcendental functions, don't show individual factors
-                include_factors = False
+                # Now we can show factors for transcendental functions too!
         except:
             # Fallback: general function
             result = get_zeros_and_singularities(f, x, domain=domain)
             zeros = result["zeros"]
-            factors = []
-            for z in zeros:
-                factors.append(
-                    {
-                        "expression": f"f({x})",
-                        "exponent": 1,
-                        "root": z,
-                    }
-                )
+            singularities = result["singularities"]
+
+            # Extract factors
+            factors = get_transcendental_factors(f, x, zeros, singularities)
             factors = sort_factors(factors)
-            include_factors = False
 
     print(f"Creating sign chart for f(x) = {f} = {f.factor()}")
 
     # Create figure
     fig, ax = make_axis(x)
 
-    # Extract roots
-    roots = [factor.get("root") for factor in factors if factor.get("root") != -np.inf]
+    # Extract roots - handle both old format (single "root") and new format (multiple "roots")
+    roots = []
+    for factor in factors:
+        if "roots" in factor and factor["roots"]:
+            # New format: multiple roots per factor
+            for r in factor["roots"]:
+                if r != -np.inf and r not in roots:
+                    roots.append(r)
+        elif "root" in factor and factor["root"] != -np.inf:
+            # Old format: single root per factor
+            if factor["root"] not in roots:
+                roots.append(factor["root"])
+
+    # Sort roots
+    roots = sorted(roots, key=lambda r: float(r.evalf()))
 
     # Map roots to positions
     num_roots = len(roots)
