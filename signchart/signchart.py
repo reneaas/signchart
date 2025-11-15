@@ -255,9 +255,46 @@ def get_transcendental_factors(f, x, zeros, singularities):
     """
     factors = []
 
+    # First check if it's a rational function with transcendental parts
     try:
-        # Try to factor the function
-        factored = sp.factor(f)
+        numer, denom = f.as_numer_denom()
+        if denom != 1 and not (denom.is_polynomial() and numer.is_polynomial()):
+            # Transcendental rational function - process numerator and denominator separately
+            # Process numerator
+            numer_factors = _extract_factors_from_expression(numer, x, zeros, [])
+            factors.extend(numer_factors)
+
+            # Process denominator
+            denom_factors = _extract_factors_from_expression(
+                denom, x, [], singularities
+            )
+            factors.extend(denom_factors)
+
+            return factors
+    except:
+        pass
+
+    # Not a rational function, process as a single expression
+    return _extract_factors_from_expression(f, x, zeros, singularities)
+
+
+def _extract_factors_from_expression(expr, x, zeros, singularities):
+    """Helper function to extract factors from a single expression (not a rational function).
+
+    Args:
+        expr: sympy expression (numerator or denominator)
+        x: variable symbol
+        zeros: zeros to associate with this expression
+        singularities: singularities to associate with this expression
+
+    Returns:
+        list of factor dictionaries
+    """
+    factors = []
+
+    try:
+        # Try to factor the expression
+        factored = sp.factor(expr)
 
         # Check if it's a power expression (e.g., cos(x)**3)
         if factored.is_Pow:
@@ -372,39 +409,38 @@ def get_transcendental_factors(f, x, zeros, singularities):
                 except:
                     pass
 
-            # Convert grouped factors to list, with roots (zeros + singularities)
+            # Convert grouped factors to list
+            # Include ALL factors, even those without zeros/singularities
             for factor_info in factor_dict.values():
                 all_roots = factor_info["zeros"] + factor_info["singularities"]
-                if all_roots:
-                    factors.append(
-                        {
-                            "expression": factor_info["expression"],
-                            "exponent": factor_info["exponent"],
-                            "roots": all_roots,
-                        }
-                    )
-        else:
-            # Not a product or power, show as single factor with all zeros
-            all_roots = zeros + singularities
-            if all_roots:
+                # Always add the factor, even if it has no roots
                 factors.append(
                     {
-                        "expression": factored,
-                        "exponent": 1,
-                        "roots": all_roots,
+                        "expression": factor_info["expression"],
+                        "exponent": factor_info["exponent"],
+                        "roots": all_roots if all_roots else [],
                     }
                 )
-    except:
-        # Fallback: just use the original function
-        all_roots = zeros + singularities
-        if all_roots:
+        else:
+            # Not a product or power, show as single factor
+            all_roots = zeros + singularities
             factors.append(
                 {
-                    "expression": f,
+                    "expression": factored,
                     "exponent": 1,
-                    "roots": all_roots,
+                    "roots": all_roots if all_roots else [],
                 }
             )
+    except:
+        # Fallback: just use the original expression
+        all_roots = zeros + singularities
+        factors.append(
+            {
+                "expression": expr,
+                "exponent": 1,
+                "roots": all_roots if all_roots else [],
+            }
+        )
 
     return factors
 
@@ -415,8 +451,11 @@ def sort_factors(factors):
         if "roots" in factor and factor["roots"]:
             # For new format, use the first root for sorting
             root = factor["roots"][0]
-        else:
+        elif "root" in factor:
             root = factor.get("root")
+        else:
+            # No roots - sort to end
+            return np.inf
 
         if root == -np.inf or root is None:
             return -np.inf
